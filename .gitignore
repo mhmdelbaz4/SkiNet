@@ -1,0 +1,6 @@
+CourseAsset/
+bin/
+obj/
+.vs/
+packages/
+appsettings*.json
