@@ -2,71 +2,82 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SkiNet_API.Entities;
+using SkiNet_API.IRepos;
 
 namespace SkiNet_API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ProductsController : ControllerBase 
+public class ProductsController(IProductsRepo productsRepo) : ControllerBase 
 {
-    private readonly StoreContext context;
-
-    public ProductsController(StoreContext context)
-    {
-        this.context = context;
-    }
+    private readonly IProductsRepo _productsRepo = productsRepo;
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Product>>> GetAllProducts()
+    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string? brand, string? type, string? sort)
     {
-        return await context.Products.ToListAsync();
+        IReadOnlyList<Product> products = await _productsRepo.GetProductsAsync(brand,type,sort);
+        return Ok(products);
     }
-
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Product>> GetProduct(int id)
     {
-        Product product = await context.Products.FindAsync(id);
+        Product product = await _productsRepo.GetProductByIdAsync(id);
         if (product is null)
             return NotFound();
 
         return Ok(product);
     }
     [HttpPost]
-    public async Task<ActionResult<Product>> AddProduct([FromForm] Product product)
+    public async Task<ActionResult<Product>> AddProduct(Product product)
     {
         if (product == null)
-            return NotFound();
+            return BadRequest();
 
-        context.Products.Add(product);
-        await context.SaveChangesAsync();
+        _productsRepo.AddProduct(product);
+        bool addSuccessfully = await _productsRepo.SaveChangesAsync();
+        if (!addSuccessfully)
+            return BadRequest();
 
-        return Ok();
+        return Created();
     }
     [HttpPut("{id:int}")]
     public async Task<ActionResult> UpdateProduct(int id, Product product)
     {
-        bool isExisting = await ProductExists(id);
+        bool isExisting = _productsRepo.ProductExists(id);
         if (id != product.Id || !isExisting)
             return NotFound();
 
-        context.Entry(product).State = EntityState.Modified;
-        await context.SaveChangesAsync();
+        _productsRepo.UpdateProduct(product);
+        bool updatedSuccessfully = await _productsRepo.SaveChangesAsync();
+        if (!updatedSuccessfully)
+            return BadRequest();
+
         return NoContent();
     }
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> DeleteProduct(int id)
     {
-        Product product =await context.Products.FindAsync(id);
+        Product product = await _productsRepo.GetProductByIdAsync(id);
         if (product is null)
             return NotFound();
 
-        context.Products.Remove(product);
-        await context.SaveChangesAsync();
+        _productsRepo.DeleteProduct(product);
+        bool deletedSuccessfully = await _productsRepo.SaveChangesAsync();
+        if (!deletedSuccessfully)
+            return BadRequest();
 
         return NoContent();
     }
-
-    private async Task<bool> ProductExists(int id)
+    [HttpGet("brands")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetAllBrands()
     {
-        return await context.Products.AnyAsync(p => p.Id == id);
+        IReadOnlyList<string> brands =await _productsRepo.GetAllBrands();
+        return Ok(brands);
     }
+    [HttpGet("types")]
+    public async Task<ActionResult<IReadOnlyList<string>>> GetAllTypes()
+    {
+        IReadOnlyList<string> types =await _productsRepo.GetAllTypes();
+        return Ok(types);
+    }
+
 }
