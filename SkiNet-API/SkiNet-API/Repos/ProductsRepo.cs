@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SkiNet_API.Entities;
-using SkiNet_API.Enums;
 using SkiNet_API.IRepos;
 using System.Diagnostics;
 

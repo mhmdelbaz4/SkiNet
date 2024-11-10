@@ -1,26 +1,25 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using SkiNet_API.Entities;
 using SkiNet_API.IRepos;
+using SkiNet_API.Specifications;
 
 namespace SkiNet_API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ProductsController(IProductsRepo productsRepo) : ControllerBase 
+public class ProductsController(IGenericRepo<Product> productsRepo) : ControllerBase 
 {
-    private readonly IProductsRepo _productsRepo = productsRepo;
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string? brand, string? type, string? sort)
+    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string brand, string type, string sort)
     {
-        IReadOnlyList<Product> products = await _productsRepo.GetProductsAsync(brand,type,sort);
+        ProductSpecification specification = new ProductSpecification(brand, type,sort);
+        IReadOnlyList<Product> products = await productsRepo.GetEntitiesWithSpecAsync(specification);
         return Ok(products);
     }
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Product>> GetProduct(int id)
     {
-        Product product = await _productsRepo.GetProductByIdAsync(id);
+        Product product = await productsRepo.GetByIdAsync(id);
         if (product is null)
             return NotFound();
 
@@ -32,8 +31,8 @@ public class ProductsController(IProductsRepo productsRepo) : ControllerBase
         if (product == null)
             return BadRequest();
 
-        _productsRepo.AddProduct(product);
-        bool addSuccessfully = await _productsRepo.SaveChangesAsync();
+        productsRepo.Add(product);
+        bool addSuccessfully = await productsRepo.SaveChangesAsync();
         if (!addSuccessfully)
             return BadRequest();
 
@@ -42,12 +41,12 @@ public class ProductsController(IProductsRepo productsRepo) : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult> UpdateProduct(int id, Product product)
     {
-        bool isExisting = _productsRepo.ProductExists(id);
+        bool isExisting = productsRepo.Exists(id);
         if (id != product.Id || !isExisting)
             return NotFound();
 
-        _productsRepo.UpdateProduct(product);
-        bool updatedSuccessfully = await _productsRepo.SaveChangesAsync();
+        productsRepo.Update(product);
+        bool updatedSuccessfully = await productsRepo.SaveChangesAsync();
         if (!updatedSuccessfully)
             return BadRequest();
 
@@ -56,12 +55,12 @@ public class ProductsController(IProductsRepo productsRepo) : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> DeleteProduct(int id)
     {
-        Product product = await _productsRepo.GetProductByIdAsync(id);
+        Product product = await productsRepo.GetByIdAsync(id);
         if (product is null)
             return NotFound();
 
-        _productsRepo.DeleteProduct(product);
-        bool deletedSuccessfully = await _productsRepo.SaveChangesAsync();
+        productsRepo.Delete(product);
+        bool deletedSuccessfully = await productsRepo.SaveChangesAsync();
         if (!deletedSuccessfully)
             return BadRequest();
 
@@ -70,14 +69,15 @@ public class ProductsController(IProductsRepo productsRepo) : ControllerBase
     [HttpGet("brands")]
     public async Task<ActionResult<IReadOnlyList<string>>> GetAllBrands()
     {
-        IReadOnlyList<string> brands =await _productsRepo.GetAllBrands();
+        BrandListSpecification brandSpecification = new BrandListSpecification();
+        IReadOnlyList<string>? brands =await productsRepo.GetEntitiesWithSpecAsync(brandSpecification);
         return Ok(brands);
     }
     [HttpGet("types")]
     public async Task<ActionResult<IReadOnlyList<string>>> GetAllTypes()
     {
-        IReadOnlyList<string> types =await _productsRepo.GetAllTypes();
+        TypeListSpecification typeListSpecification = new TypeListSpecification();
+        IReadOnlyList<string>? types = await productsRepo.GetEntitiesWithSpecAsync(typeListSpecification);
         return Ok(types);
     }
-
 }

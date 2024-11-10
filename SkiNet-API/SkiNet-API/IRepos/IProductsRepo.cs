@@ -1,5 +1,4 @@
 ﻿using SkiNet_API.Entities;
-using SkiNet_API.Enums;
 
 namespace SkiNet_API.IRepos
 {
