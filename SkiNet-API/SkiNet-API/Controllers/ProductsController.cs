@@ -5,16 +5,13 @@ using SkiNet_API.Specifications;
 
 namespace SkiNet_API.Controllers;
 
-[Route("api/[controller]")]
-[ApiController]
-public class ProductsController(IGenericRepo<Product> productsRepo) : ControllerBase 
+public class ProductsController(IGenericRepo<Product> productsRepo) : APIBaseController<Product>  
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string brand, string type, string sort)
+    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts([FromQuery] ProductSpecParams specParams)
     {
-        ProductSpecification specification = new ProductSpecification(brand, type,sort);
-        IReadOnlyList<Product> products = await productsRepo.GetEntitiesWithSpecAsync(specification);
-        return Ok(products);
+        ProductSpecification specification = new ProductSpecification(specParams);
+        return Ok(await GetPaginationResult(productsRepo,specification,specParams.PageIndex,specParams.PageSize));
     }
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Product>> GetProduct(int id)

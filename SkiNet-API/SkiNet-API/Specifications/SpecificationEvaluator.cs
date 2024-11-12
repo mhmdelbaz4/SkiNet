@@ -1,4 +1,6 @@
-﻿namespace SkiNet_API.Specifications;
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace SkiNet_API.Specifications;
 
 public static class SpecificationEvaluator<T>
 {
@@ -6,13 +8,15 @@ public static class SpecificationEvaluator<T>
     {
         if (spec.Criteria != null)
             query = query.Where(spec.Criteria);
-
         if (spec.OrderByExpression != null)
             query = query.OrderBy(spec.OrderByExpression);
-
         if (spec.OrderByDescendingExpression != null)
             query = query.OrderByDescending(spec.OrderByDescendingExpression);
+        
+        if(spec.IsPaginationEnabled)
+            query = query.Skip(spec.PageIndex * spec.PageSize).Take(spec.PageSize);
 
+        Console.WriteLine(query.ToQueryString());
         return query;
     }
 
@@ -28,4 +32,13 @@ public static class SpecificationEvaluator<T>
 
         return queryWithSelect ?? query.Cast<TResult>();
     }
+
+    public static IQueryable<T> ApplyCriteria(IQueryable<T> query, IBaseSpecification<T> baseSpecification)
+    {
+        if(baseSpecification.Criteria != null)
+            query = query.Where(baseSpecification.Criteria);
+        Console.WriteLine(query.ToQueryString());
+        return query;
+    }
+
 }

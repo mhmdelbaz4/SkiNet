@@ -79,4 +79,10 @@ public class GenericRepo<T>(StoreContext context) : IGenericRepo<T> where T : Ba
     {
         return SpecificationEvaluator<T>.GetQuery<TResult>(context.Set<T>(),spec);
     }
+
+    public async Task<int> CountAsync(IBaseSpecification<T> baseSpecification)
+    {
+        IQueryable<T> query = SpecificationEvaluator<T>.ApplyCriteria(context.Set<T>(), baseSpecification);
+        return await query.CountAsync();
+    }
 }

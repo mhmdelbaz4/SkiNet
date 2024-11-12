@@ -7,6 +7,9 @@ public interface IBaseSpecification<T>
     public Expression<Func<T, bool>>? Criteria { get; }
     public Expression<Func<T, object>>? OrderByExpression { get; }
     public Expression<Func<T, object>>? OrderByDescendingExpression { get; }
+    public int PageIndex {  get; }
+    public int PageSize { get; }
+    public bool IsPaginationEnabled { get;}
 }
 public interface IBaseSpecification<T, TResult> : IBaseSpecification<T>
 {
