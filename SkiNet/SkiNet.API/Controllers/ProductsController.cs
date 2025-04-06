@@ -1,20 +1,27 @@
-﻿
+﻿using Core.Enums;
+using Core.Specifications;
+
 namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductsController(AppDbContext context) : ControllerBase
+public class ProductsController(IGenericRepository<Product> repo) : ControllerBase
 {
 
     [HttpGet]
-    public async Task<ActionResult> GetProducts()
+    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string? brand, string? type,ProductSortEnum? sortby ,SortingOptionsEnum? sortOption)
     {
-        return Ok(await context.Products.Where(p => ! p.IsDeleted).ToListAsync());
+        ProductSpecification spec;
+        if(sortby != null)
+            spec = new ProductSpecification(brand, type,sortby.Value, sortOption == null ? SortingOptionsEnum.Asc: sortOption.Value);
+        else
+            spec = new ProductSpecification(brand, type);
+        return Ok(await repo.ListSpecAsync(spec));
     }
     [HttpGet("{id:guid}")]
     public async Task<ActionResult> GetProduct(Guid id)
     {
-        Product? product =await context.Products.FirstOrDefaultAsync(p => p.Id == id && ! p.IsDeleted);
+        Product? product =await repo.GetByIdAsync(id);
         if (product == null) return NotFound();
 
         return Ok(product);
@@ -22,44 +29,48 @@ public class ProductsController(AppDbContext context) : ControllerBase
     [HttpPost]
     public async Task<ActionResult> AddProduct(Product product)
     {
-        product.CreatedAt = DateTime.Now;
-        product.Id = Guid.NewGuid();
-        context.Products.Add(product);
-        
-        await context.SaveChangesAsync();
+        repo.Add(product);
+        if(! await repo.SaveChangesAsync())
+            return StatusCode(StatusCodes.Status500InternalServerError);
 
-        return Created($"api/products/{product.Id}", product);
+        return CreatedAtAction(nameof(GetProduct), new { id = product.Id}, product);
     }
     [HttpPut]
     public async Task<ActionResult> UpdateProduct(Product product)
     {
-        if (!await ProductExists(product.Id))
+        if (!await repo.Exists(product.Id))
             return NotFound();
 
-        context.Entry(product).State = EntityState.Modified;
+       repo.Update(product);
 
-        if (!(await context.SaveChangesAsync() > 0))
+        if (!await repo.SaveChangesAsync())
             return StatusCode(StatusCodes.Status500InternalServerError);
 
-        return Ok();
+        return NoContent();
     }
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> DeleteProduct(Guid id)
     {
-        Product? product = await context.Products.FirstOrDefaultAsync(p => p.Id ==id && !p.IsDeleted);
+        Product? product =await repo.GetByIdAsync(id);
         if (product == null) return NotFound();
 
-        product.IsDeleted = true;
-        product.DeletedAt = DateTime.Now;
-        context.Entry(product).State = EntityState.Modified;
+        repo.Remove(product);
 
-        if (!(await context.SaveChangesAsync() > 0))
+        if (!await repo.SaveChangesAsync())
             return StatusCode(StatusCodes.Status500InternalServerError);
 
         return Ok();
     }
-    private async Task<bool> ProductExists(Guid id)
+    [HttpGet("brands")]
+    public async Task<ActionResult<List<string>>> GetBrands()
     {
-        return await context.Products.AnyAsync(p => p.Id == id && !p.IsDeleted);
+        DistinctBrandsSpec distinctBrandsSpec = new DistinctBrandsSpec();
+        IEnumerable<string>? brands =await repo.ListSpecAsync(distinctBrandsSpec);
+        return Ok(brands);
+    }
+    [HttpGet("types")]
+    public async Task<ActionResult<List<string>>> GetTypes()
+    {
+        return Ok();
     }
 }
