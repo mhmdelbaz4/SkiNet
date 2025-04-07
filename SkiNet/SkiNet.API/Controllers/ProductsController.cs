@@ -1,22 +1,14 @@
-﻿using Core.Enums;
-using Core.Specifications;
-
-namespace API.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class ProductsController(IGenericRepository<Product> repo) : ControllerBase
+﻿namespace API.Controllers;
+public class ProductsController(IGenericRepository<Product> repo) : APIControllerBase
 {
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts(string? brand, string? type,ProductSortEnum? sortby ,SortingOptionsEnum? sortOption)
+    public async Task<ActionResult<IReadOnlyList<Product>>> GetProducts([FromQuery]ProductSpecParams productSpecParams)
     {
-        ProductSpecification spec;
-        if(sortby != null)
-            spec = new ProductSpecification(brand, type,sortby.Value, sortOption == null ? SortingOptionsEnum.Asc: sortOption.Value);
-        else
-            spec = new ProductSpecification(brand, type);
-        return Ok(await repo.ListSpecAsync(spec));
+        ProductSpecification spec= new ProductSpecification(productSpecParams);
+
+        Pagination<Product> pagination =await GetPaginationResult(repo, spec, productSpecParams.PageIndex, productSpecParams.PageSize);
+        return Ok(pagination);
     }
     [HttpGet("{id:guid}")]
     public async Task<ActionResult> GetProduct(Guid id)
