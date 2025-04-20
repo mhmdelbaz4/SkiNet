@@ -1,3 +1,4 @@
+using API.Middlewares;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,9 +9,15 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.RegisterInfrastructureServices();
+builder.Services.AddCors();
 
 var app = builder.Build();
 app.UseHttpsRedirection();
+app.UseCors(opt =>
+{
+    opt.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200", "https://localhost:4200");
+});
+//app.UseGlobalException();
 app.UseAuthorization();
 app.MapControllers();
 
