@@ -27,12 +27,10 @@ try
     {
         AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await context.Database.MigrateAsync();
-        await SeedDataContext.SeedDataAsync(context);
     }
 }catch (Exception ex)
 {
     Console.WriteLine(ex.Message);
 }
 
-app.Run();
 app.Run();

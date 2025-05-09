@@ -29,28 +29,21 @@ public class ProductSpecification : BaseSpecification<Product>
         }
         ApplyFilter(criteriaExpression);
 
-        Expression<Func<Product, object>> sortExpression;
-        if (specParams.SortOption == SortingOptionsEnum.Asc)
+        switch(specParams.SortBy)
         {
-            sortExpression = specParams.SortBy switch
-            {
-                ProductSortEnum.Name => p => p.Name,
-                ProductSortEnum.Price => p => p.Price,
-                _ => p => p.Name
-            };
-            ApplySort(sortExpression);
+            case ProductSortEnum.Name:
+                ApplySort(p => p.Name);
+                break;
+            case ProductSortEnum.PriceAsc:
+                ApplySort(p => p.Price);
+                break;
+            case ProductSortEnum.PriceDesc:
+                ApplySortDescending(p => p.Price);
+                break;
+            default:
+                ApplySort(p => p.Name);
+                break;
         }
-        else
-        {
-            sortExpression = specParams.SortBy switch
-            {
-                ProductSortEnum.Name => p => p.Name,
-                ProductSortEnum.Price => p => p.Price,
-                _ => p => p.Name
-            };
-            ApplySortDescending(sortExpression);
-        }
-
         ApplyPaging(specParams.PageIndex, specParams.PageSize);
     }
 }

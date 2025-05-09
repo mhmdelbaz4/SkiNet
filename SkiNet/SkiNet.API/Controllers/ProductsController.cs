@@ -63,6 +63,8 @@ public class ProductsController(IGenericRepository<Product> repo) : APIControlle
     [HttpGet("types")]
     public async Task<ActionResult<List<string>>> GetTypes()
     {
-        return Ok();
+        DistinctTypesSpec distinctTypesSpec = new DistinctTypesSpec();
+        IEnumerable<string>? types = await repo.ListSpecAsync(distinctTypesSpec);
+        return Ok(types);
     }
 }

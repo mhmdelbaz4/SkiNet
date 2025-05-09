@@ -48,5 +48,4 @@ public class ProductSpecParams
         }
     }
     public ProductSortEnum  SortBy { get; set; }
-    public SortingOptionsEnum SortOption { get; set; } = SortingOptionsEnum.Asc;
 }

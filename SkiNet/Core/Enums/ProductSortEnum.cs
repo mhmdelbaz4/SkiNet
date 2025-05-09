@@ -2,5 +2,6 @@
 public enum ProductSortEnum
 {
     Name = 1,
-    Price
+    PriceAsc, 
+    PriceDesc
 }
